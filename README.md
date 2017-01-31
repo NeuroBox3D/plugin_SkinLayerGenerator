@@ -1,2 +1,2 @@
-# plugin_SkinLayerGenerator
-Generates skin layer volume meshes
+# SkinLayerGenerator 
+Generates skin layer volume meshes 
