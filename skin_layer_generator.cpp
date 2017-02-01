@@ -34,9 +34,48 @@ ug::DebugID SLGGenerateMesh("SLG_DID.GenerateMesh");
 void SkinLayerGenerator::generate() {
 	using namespace promesh;
 	UG_DLOG(SLGGenerateMesh, 0, "Generating mesh.")
+	/// empty mesh
 	Mesh* mesh = new Mesh();
+
+	/// mesh operations
+	UG_COND_THROW(m_radiusInjection == 0, "Radius of injection layer has to be > 0.")
+	CreateCircle(mesh, m_centerInjection, m_radiusInjection, m_numVerticesInjection, INJECTION, false);
+
+	UG_COND_THROW(m_radius == 0, "Radius of skin layer has to be > 0.")
 	CreateCircle(mesh, m_center, m_radius, m_numVertices, SUBCUTAN, false);
+
+	/// position attachment for vertices
+	AInt aInt;
+	mesh->grid().attach_to_vertices(aInt);
+	mesh->grid().attach_to_vertices(aPosition);
+	mesh->grid().attach_to_all(aNormal);
+
+	/// select all, then fill with triangles
+	SelectAll(mesh);
+	TriangleFill_SweepLine(mesh->grid(), mesh->selector().edges_begin(), mesh->selector().edges_end(), aPosition, aInt, &mesh->subset_handler(), 0);
+
+	/// retriangulate (quality grid)
+	SelectAll(mesh);
+	Retriangulate(mesh, m_degTri);
+
+	/// extrude
+	///SelectAll(mesh);
+	///ExtrudeAlongNormal(mesh, 1.0, 10, true, true);
+
+	/// rename subsets, erase empty subsets and assign colors
+	EraseEmptySubsets(mesh->subset_handler());
+	for (std::map<std::string, int>::const_iterator it = m_subsetNames.begin();
+			it != m_subsetNames.end(); ++it) {
+		mesh->subset_handler().subset_info(it->second).name = (it->first).c_str();
+	}
+
+	EraseEmptySubsets(mesh->subset_handler());
+	AssignSubsetColors(mesh->subset_handler());
+
+	/// save grid to file
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator.ugx");
+
+	/// delete mesh
 	delete mesh;
 }
 

@@ -27,7 +27,10 @@ namespace ug {
 			 * \brief
 			 */
 			SkinLayerGenerator() : m_center(ug::vector3(0, 0, 0)),
-								   m_radius(1), m_numVertices(10) {
+								   m_centerInjection(ug::vector3(0, 0, 0)),
+								   m_radius(1), m_radiusInjection(0.5),
+								   m_numVertices(10), m_numVerticesInjection(10),
+								   m_degTri(30) {
 					m_subsetNames = boost::assign::map_list_of
 			    		  ("Epidermis layer", EPIDERMIS)
 						  ("Subcutan layer", SUBCUTAN)
@@ -35,7 +38,8 @@ namespace ug {
 						  ("Injection boundary", INJECTION_BOUNDARY)
 						  ("Top surface of skin layer", SURFACE_TOP)
 						  ("Bottom surface of skin layer", SURFACE_BOTTOM)
-						  ("Left and right surface of skin layer", SURFACE_LEFT_RIGHT);
+						  ("Left and right surface of skin layer", SURFACE_LEFT_RIGHT)
+						  ("Undefined (collecting subset)", UNDEF);
 			}
 
            	/*!
@@ -54,13 +58,19 @@ namespace ug {
 				INJECTION_BOUNDARY,
 				SURFACE_TOP,
 				SURFACE_BOTTOM,
-				SURFACE_LEFT_RIGHT
+				SURFACE_LEFT_RIGHT,
+				UNDEF
 			};
 
 			/// grid generation parameters
 			ug::vector3 m_center;
+			ug::vector3 m_centerInjection;
 			number m_radius;
+			number m_radiusInjection;
 			size_t m_numVertices;
+			size_t m_numVerticesInjection;
+
+			number m_degTri;
 
 			/// grid generation constants
 			static const number REMOVE_DOUBLES_THRESHOLD;
