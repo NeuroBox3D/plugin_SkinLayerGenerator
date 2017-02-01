@@ -59,8 +59,12 @@ void SkinLayerGenerator::generate() {
 	Retriangulate(mesh, m_degTri);
 
 	/// extrude
-	///SelectAll(mesh);
-	///ExtrudeAlongNormal(mesh, 1.0, 10, true, true);
+	SelectAll(mesh);
+	ExtrudeAlongNormal(mesh, m_injectionBase, m_numStepsExtrudeSubcutan, true, true, false);
+	///FixFaceOrientation(mesh->grid(), mesh->grid().faces_begin(), mesh->grid().faces_end());
+	ExtrudeAlongNormal(mesh, m_injectionHeight, m_numStepsExtrudeInjection, true, true, true);
+	///ExtrudeAlongNormal(mesh, m_epidermisThickness, m_numStepsExtrudeEpidermis, true, true, false);
+
 
 	/// rename subsets, erase empty subsets and assign colors
 	EraseEmptySubsets(mesh->subset_handler());

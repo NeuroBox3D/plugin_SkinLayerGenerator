@@ -28,6 +28,9 @@ namespace ug {
 			 */
 			SkinLayerGenerator() : m_center(ug::vector3(0, 0, 0)),
 								   m_centerInjection(ug::vector3(0, 0, 0)),
+								   m_injectionBase(1), m_injectionHeight(1.5),
+								   m_numStepsExtrudeSubcutan(1), m_numStepsExtrudeEpidermis(1),
+								   m_numStepsExtrudeInjection(1), m_epidermisThickness(0.5),
 								   m_radius(1), m_radiusInjection(0.5),
 								   m_numVertices(10), m_numVerticesInjection(10),
 								   m_degTri(30) {
@@ -65,6 +68,13 @@ namespace ug {
 			/// grid generation parameters
 			ug::vector3 m_center;
 			ug::vector3 m_centerInjection;
+			number m_injectionBase;
+			number m_injectionHeight;
+			number m_numStepsExtrudeSubcutan;
+			number m_numStepsExtrudeEpidermis;
+			number m_numStepsExtrudeInjection;
+			number m_epidermisThickness;
+
 			number m_radius;
 			number m_radiusInjection;
 			size_t m_numVertices;
