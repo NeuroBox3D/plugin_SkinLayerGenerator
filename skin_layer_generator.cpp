@@ -57,14 +57,19 @@ void SkinLayerGenerator::generate() {
 	/// retriangulate (quality grid)
 	SelectAll(mesh);
 	Retriangulate(mesh, m_degTri);
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step1.ugx");
 
 	/// extrude
 	SelectAll(mesh);
 	ExtrudeAlongNormal(mesh, m_injectionBase, m_numStepsExtrudeSubcutan, true, true, false);
-	///FixFaceOrientation(mesh->grid(), mesh->grid().faces_begin(), mesh->grid().faces_end());
-	ExtrudeAlongNormal(mesh, m_injectionHeight, m_numStepsExtrudeInjection, true, true, true);
-	///ExtrudeAlongNormal(mesh, m_epidermisThickness, m_numStepsExtrudeEpidermis, true, true, false);
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step2.ugx");
 
+	FixFaceOrientation(mesh->grid(), mesh->grid().faces_begin(), mesh->grid().faces_end());
+	ExtrudeAlongNormal(mesh, m_injectionHeight, m_numStepsExtrudeInjection, true, true, true);
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step3.ugx");
+
+	/// FixFaceOrientation(mesh->grid(), mesh->grid().faces_begin(), mesh->grid().faces_end());
+	/// ExtrudeAlongNormal(mesh, m_epidermisThickness, m_numStepsExtrudeEpidermis, true, true, false);
 
 	/// rename subsets, erase empty subsets and assign colors
 	EraseEmptySubsets(mesh->subset_handler());
