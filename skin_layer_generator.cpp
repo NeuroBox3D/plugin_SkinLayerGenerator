@@ -64,7 +64,7 @@ void SkinLayerGenerator::generate() {
 	ExtrudeAlongNormal(mesh, m_injectionBase, m_numStepsExtrudeSubcutan, true, true, false);
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step2.ugx");
 
-	FixFaceOrientation(mesh->grid(), mesh->grid().faces_begin(), mesh->grid().faces_end());
+    FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
 	ExtrudeAlongNormal(mesh, m_injectionHeight, m_numStepsExtrudeInjection, true, true, false);
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step3.ugx");
 
