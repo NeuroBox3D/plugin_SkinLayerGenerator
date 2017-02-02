@@ -43,9 +43,9 @@ ENDIF(${SLGC++0x} STREQUAL "ON")
 
 # create a shared library from the sources and link it against ug
 if(buildEmbeddedPlugins)
-	EXPORTSOURCES(${CMAKE_CURRENT_SOURCE_DIR} ${SOURCES})
+	EXPORTSOURCES(${CMAKE_CURRENT_SOURCE_DIR} ${SOURCES} ${SOURCES_TEST})
 	if(${SLGTestsuite} STREQUAL "ON")
-		target_link_libraries (SLGTestsuite ug4 ProMesh)
+		target_link_libraries (SLGTestsuite ug4)
 	endif(${SLGTestsuite} STREQUAL "ON")
 else(buildEmbeddedPlugins)
     add_library(SkinLayerGenerator SHARED ${SOURCES})
