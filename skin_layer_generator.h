@@ -34,15 +34,14 @@ namespace ug {
 								   m_radius(1), m_radiusInjection(0.5),
 								   m_numVertices(10), m_numVerticesInjection(10),
 								   m_degTri(30) {
-					m_subsetNames = boost::assign::map_list_of<std::string, SUBSET_INDICES>
-			    		  ("Epidermis layer", EPIDERMIS)
-						  ("Subcutan layer", SUBCUTAN)
-						  ("Inection layer", INJECTION)
-						  ("Injection boundary", INJECTION_BOUNDARY)
-						  ("Top surface of skin layer", SURFACE_TOP)
-						  ("Bottom surface of skin layer", SURFACE_BOTTOM)
-						  ("Left and right surface of skin layer", SURFACE_LEFT_RIGHT)
-						  ("Undefined (collecting subset)", UNDEF);
+					m_subsetNames["Epidermis layer"] = EPIDERMIS;
+					m_subsetNames["Subcutan layer"] = SUBCUTAN;
+					m_subsetNames["Injection layer"] = INJECTION;
+					m_subsetNames["Injection boundary"] = INJECTION_BOUNDARY;
+					m_subsetNames["Top surface of skin layer"] = SURFACE_TOP;
+					m_subsetNames["Bottom surface of skin layer"] = SURFACE_BOTTOM;
+					m_subsetNames["Left and right surface of skin layer"] = SURFACE_LEFT_RIGHT;
+					m_subsetNames["Undefined (collecting subset)"] = UNDEF;
 			}
 
            	/*!
