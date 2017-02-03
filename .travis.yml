@@ -18,7 +18,7 @@ before_script:
   - git clone https://www.github.com/UG4/ughub
   - ughub/ughub init
   - ughub/ughub addsource neurobox https://github.com/NeuroBox3D/neurobox-packages.git
-  - ughub/ughub install ugcore ProMesh Neurolucida
+  - ughub/ughub install ugcore ProMesh SkinLayerGenerator
   - mkdir build && cd build && cmake ../ -DTARGET=ugshell -DLAPACK=OFF -DBLAS=OFF -DDIM="3" -DCPU=1 -DCOMPILE_INFO=OFF -DProMesh=ON -DSkinLayerGenerator=ON -DEMBEDDED_PLUGINS=OFF
   - travis_wait 800 make
   - cd ..
