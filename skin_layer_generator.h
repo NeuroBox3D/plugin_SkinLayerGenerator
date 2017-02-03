@@ -34,7 +34,7 @@ namespace ug {
 								   m_radius(1), m_radiusInjection(0.5),
 								   m_numVertices(10), m_numVerticesInjection(10),
 								   m_degTri(30) {
-					m_subsetNames = boost::assign::map_list_of
+					m_subsetNames = boost::assign::map_list_of<std::string, SUBSET_INDICES>
 			    		  ("Epidermis layer", EPIDERMIS)
 						  ("Subcutan layer", SUBCUTAN)
 						  ("Inection layer", INJECTION)
