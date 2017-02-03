@@ -7,4 +7,4 @@ Generates skin layer volume meshes
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7edd60b62af741eeb0f04e35a56f19e8)](https://www.codacy.com/app/stephan_5/plugin_SkinLayerGenerator?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=NeuroBox3D/plugin_SkinLayerGenerator&amp;utm_campaign=Badge_Grade)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](http://www.gnu.org/licenses/lgpl-3.0)
 [![Issue Count](https://codeclimate.com/github/NeuroBox3D/plugin_SkinLayerGenerator/badges/issue_count.svg)](https://codeclimate.com/github/NeuroBox3D/plugin_SkinLayerGenerator)
-![Issues ready to develop](https://badge.waffle.io/NeuroBox3D/plugin_SkinLayerGenerator.svg?label=ready&title=Issues ready to develop)](http://waffle.io/NeuroBox3D/plugin_SkinLayerGenerator)
+![Issues ready to develop](https://badge.waffle.io/NeuroBox3D/plugin_SkinLayerGenerator.svg?label=ready&title=Ready)](http://waffle.io/NeuroBox3D/plugin_SkinLayerGenerator)
