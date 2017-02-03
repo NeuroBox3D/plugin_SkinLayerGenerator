@@ -10,7 +10,7 @@
 #include "skin_layer_generator.h"
 #include "lib_grid/lib_grid.h"
 #include "lib_grid/algorithms/remove_duplicates_util.h"
-#include "../ugcore/ugbase/bridge/domain_bridges/selection_bridge.h"
+#include "bridge/domain_bridges/selection_bridge.h"
 #include "../ProMesh/mesh.h"
 #include "../ProMesh/tools/grid_generation_tools.h"
 #include "../ProMesh/tools/remeshing_tools.h"
