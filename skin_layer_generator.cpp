@@ -59,7 +59,7 @@ void SkinLayerGenerator::generate() {
 	Retriangulate(mesh, m_degTri);
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step1.ugx");
 
-	/// extrude
+	/// extrude layers
 	SelectAll(mesh);
 	ExtrudeAlongNormal(mesh, m_injectionBase, m_numStepsExtrudeSubcutan, true, true);
 
@@ -76,8 +76,12 @@ void SkinLayerGenerator::generate() {
 		mesh->subset_handler().subset_info(it->second).name = (it->first).c_str();
 	}
 
+	/// cleanup mesh
 	EraseEmptySubsets(mesh->subset_handler());
 	AssignSubsetColors(mesh->subset_handler());
+	mesh->selector().clear();
+
+	/// select subsets and assign them (TODO)
 
 	/// save grid to file
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator.ugx");

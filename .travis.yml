@@ -23,4 +23,4 @@ before_script:
   - travis_wait 600 make
 
 script:
-  - ./scripts/test.sh
+  - /home/travis/build/NeuroBox3D/plugin_SkinLayerGenerator/plugins/SkinLayerGenerator/scripts/test.sh

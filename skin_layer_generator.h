@@ -28,7 +28,7 @@ namespace ug {
 			 */
 			SkinLayerGenerator() : m_center(ug::vector3(0, 0, 0)),
 								   m_centerInjection(ug::vector3(0, 0, 0)),
-								   m_injectionBase(1), m_injectionHeight(1.5),
+								   m_injectionBase(1), m_injectionHeight(0.25),
 								   m_numStepsExtrudeSubcutan(1), m_numStepsExtrudeEpidermis(1),
 								   m_numStepsExtrudeInjection(1), m_epidermisThickness(0.5),
 								   m_radius(1), m_radiusInjection(0.5),
