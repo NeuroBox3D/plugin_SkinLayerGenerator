@@ -82,6 +82,14 @@ void SkinLayerGenerator::generate() {
 	mesh->selector().clear();
 
 	/// select subsets and assign them (TODO)
+	ug::vector3 base(m_centerInjection.x(), m_centerInjection.y(), m_centerInjection.z() + m_injectionBase);
+	ug::vector3 top(m_centerInjection.x(), m_centerInjection.y(), m_centerInjection.z() + m_injectionBase + m_injectionHeight);
+	SelectElementsInCylinder<ug::Face>(mesh, base, top, m_radiusInjection);
+	SelectElementsInCylinder<ug::Volume>(mesh, base, top, m_radiusInjection);
+	SelectElementsInCylinder<ug::Vertex>(mesh, base, top, m_radiusInjection);
+	SelectElementsInCylinder<ug::Edge>(mesh, base, top, m_radiusInjection);
+
+	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), UNDEF);
 
 	/// save grid to file
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator.ugx");
