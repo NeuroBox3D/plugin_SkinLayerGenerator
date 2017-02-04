@@ -134,7 +134,7 @@ void SkinLayerGenerator::generate() {
 	EraseEmptySubsets(mesh->subset_handler());
 	AssignSubsetColors(mesh->subset_handler());
 
-	/// TODO: tetrahedralize
+	/// tetrahedralize TODO
 
 	/// save grid to file
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator.ugx");
