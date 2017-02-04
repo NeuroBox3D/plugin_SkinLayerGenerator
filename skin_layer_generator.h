@@ -2,6 +2,8 @@
  * \file plugins/skin_layer_generator/skin_layer_generator.h
  * \brief
  *
+ * TODO: make this an utilty class
+ *
  *  Created on: January 30, 2017
  *      Author: Stephan Grein
  */
@@ -33,15 +35,12 @@ namespace ug {
 								   m_numStepsExtrudeInjection(1), m_epidermisThickness(0.5),
 								   m_radius(1), m_radiusInjection(0.5),
 								   m_numVertices(10), m_numVerticesInjection(10),
-								   m_degTri(30) {
+								   m_degTri(30), m_bWithInnerNeumannBoundary(false) {
 					m_subsetNames["Epidermis layer"] = EPIDERMIS;
 					m_subsetNames["Subcutan layer"] = SUBCUTAN;
 					m_subsetNames["Injection layer"] = INJECTION;
 					m_subsetNames["Injection boundary"] = INJECTION_BOUNDARY;
-					m_subsetNames["Top surface of skin layer"] = SURFACE_TOP;
-					m_subsetNames["Bottom surface of skin layer"] = SURFACE_BOTTOM;
-					m_subsetNames["Left and right surface of skin layer"] = SURFACE_LEFT_RIGHT;
-					m_subsetNames["Undefined (collecting subset)"] = UNDEF;
+					m_subsetNames["Surface"] = SURFACE_ALL;
 			}
 
            	/*!
@@ -54,14 +53,11 @@ namespace ug {
 			/// available subset names
 			std::map<std::string, int> m_subsetNames;
 			enum SUBSET_INDICES {
-				EPIDERMIS,
 				SUBCUTAN,
 				INJECTION,
-				INJECTION_BOUNDARY,
-				SURFACE_TOP,
-				SURFACE_BOTTOM,
-				SURFACE_LEFT_RIGHT,
-				UNDEF
+				EPIDERMIS,
+				SURFACE_ALL,
+				INJECTION_BOUNDARY
 			};
 
 			/// grid generation parameters
@@ -80,6 +76,8 @@ namespace ug {
 			size_t m_numVerticesInjection;
 
 			number m_degTri;
+
+			bool m_bWithInnerNeumannBoundary;
 
 			/// grid generation constants
 			static const number REMOVE_DOUBLES_THRESHOLD;
