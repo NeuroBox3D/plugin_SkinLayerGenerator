@@ -2,6 +2,12 @@
  * \file plugins/skin_layer_generator/skin_layer_generator.cpp
  * \brief
  *
+ * TODO: subcutan thickness probably should also be specifiable, i.e. extrude to
+ * 	     injection, then place injection, then extrude the remaining
+ * 	     difference in height (i.e. subcutanthickness-belowInjectionThickness-
+ * 	     injectionThickness has to be extruded after the injection layer has
+ * 	     been extruded.
+ *
  *  Created on: January 30, 2017
  *      Author: Stephan Grein
  */
