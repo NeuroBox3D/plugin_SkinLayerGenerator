@@ -97,18 +97,33 @@ void SkinLayerGenerator::generate() {
 	SelectElementsInCylinder<ug::Volume>(mesh, base, top, m_radiusInjection);
 	SelectElementsInCylinder<ug::Vertex>(mesh, base, top, m_radiusInjection);
 	SelectElementsInCylinder<ug::Edge>(mesh, base, top, m_radiusInjection);
-	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), INJECTION);
+	if (m_bWithInnerNeumannBoundary) {
+		AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), INJECTION_BOUNDARY);
+	} else {
+		AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), INJECTION);
+	}
 	mesh->selector().clear();
+
+	/// TODO: probably there is a better way to separate injection and its boundary
+	if (m_bWithInnerNeumannBoundary) {
+		ug::vector3 base2 = base;
+		ug::vector3 top2 = top;
+		base2[2] = base2.z() + SELECTION_THRESHOLD;
+		top2[2] = top2.z() - SELECTION_THRESHOLD;
+
+		SelectElementsInCylinder<ug::Volume>(mesh, base, top, m_radiusInjection);
+		SelectElementsInCylinder<ug::Vertex>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
+		SelectElementsInCylinder<ug::Edge>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
+		SelectElementsInCylinder<ug::Face>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
+		AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), INJECTION);
+		mesh->selector().clear();
+	}
 
 	SelectBoundaryFaces(mesh);
 	SelectBoundaryVertices(mesh);
 	SelectBoundaryEdges(mesh);
 	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), SURFACE_ALL);
 	mesh->selector().clear();
-
-	if (m_bWithInnerNeumannBoundary) {
-		/// TODO: create inner neumann boundary layer here
-	}
 
 	/// rename subsets, erase empty subsets and assign colors
 	EraseEmptySubsets(mesh->subset_handler());
@@ -118,6 +133,8 @@ void SkinLayerGenerator::generate() {
 	}
 	EraseEmptySubsets(mesh->subset_handler());
 	AssignSubsetColors(mesh->subset_handler());
+
+	/// TODO: tetrahedralize
 
 	/// save grid to file
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator.ugx");
@@ -132,4 +149,5 @@ void SkinLayerGenerator::generate() {
 /// constants
 /////////////////////////////////////////////////////////
 const number SkinLayerGenerator::REMOVE_DOUBLES_THRESHOLD = 1e-8;
+const number SkinLayerGenerator::SELECTION_THRESHOLD = 0.1;
 const bool SkinLayerGenerator::FILL = false;

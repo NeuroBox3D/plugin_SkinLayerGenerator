@@ -35,7 +35,7 @@ namespace ug {
 								   m_numStepsExtrudeInjection(1), m_epidermisThickness(0.5),
 								   m_radius(1), m_radiusInjection(0.5),
 								   m_numVertices(10), m_numVerticesInjection(10),
-								   m_degTri(30), m_bWithInnerNeumannBoundary(false) {
+								   m_degTri(30), m_bWithInnerNeumannBoundary(true) {
 					m_subsetNames["Epidermis layer"] = EPIDERMIS;
 					m_subsetNames["Subcutan layer"] = SUBCUTAN;
 					m_subsetNames["Injection layer"] = INJECTION;
@@ -81,6 +81,7 @@ namespace ug {
 
 			/// grid generation constants
 			static const number REMOVE_DOUBLES_THRESHOLD;
+			static const number SELECTION_THRESHOLD;
 			static const bool FILL;
 		};
 	}
