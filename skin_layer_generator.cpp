@@ -134,7 +134,8 @@ void SkinLayerGenerator::generate() {
 	EraseEmptySubsets(mesh->subset_handler());
 	AssignSubsetColors(mesh->subset_handler());
 
-	/// tetrahedralize TODO
+	/// tetrahedralize TODO -> segfaults? why?
+	Tetrahedralize(mesh->grid(), mesh->subset_handler(), 30, true, true, aPosition, 1);
 
 	/// save grid to file
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator.ugx");
