@@ -63,7 +63,6 @@ void SkinLayerGenerator::generate() {
 	/// retriangulate (quality grid)
 	SelectAll(mesh);
 	Retriangulate(mesh, m_degTri);
-	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step1.ugx");
 
 	/// extrude layers
 	SelectAll(mesh);
@@ -104,7 +103,6 @@ void SkinLayerGenerator::generate() {
 	}
 	mesh->selector().clear();
 
-	/// TODO: probably there is a better way to separate injection and its boundary
 	if (m_bWithInnerNeumannBoundary) {
 		ug::vector3 base2 = base;
 		ug::vector3 top2 = top;
@@ -133,12 +131,18 @@ void SkinLayerGenerator::generate() {
 	}
 	EraseEmptySubsets(mesh->subset_handler());
 	AssignSubsetColors(mesh->subset_handler());
+	/// save temporary delaunay grid to file
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_delaunay.ugx");
 
-	/// tetrahedralize TODO -> segfaults? why?
-	Tetrahedralize(mesh->grid(), mesh->subset_handler(), 30, true, true, aPosition, 1);
+	/// tetrahedralize
+	Tetrahedralize(mesh->grid(), mesh->subset_handler(), m_degTet, true, true, aPosition, 1);
+	EraseEmptySubsets(mesh->subset_handler());
+	AssignSubsetColors(mesh->subset_handler());
 
-	/// save grid to file
-	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator.ugx");
+	/// TODO reassign elements (note: there is a better way to assign it)
+
+	/// save final grid to file
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_volume.ugx");
 
 	/// delete mesh
 	delete mesh;

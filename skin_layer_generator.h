@@ -35,7 +35,7 @@ namespace ug {
 								   m_numStepsExtrudeInjection(1), m_epidermisThickness(0.5),
 								   m_radius(1), m_radiusInjection(0.5),
 								   m_numVertices(10), m_numVerticesInjection(10),
-								   m_degTri(30), m_bWithInnerNeumannBoundary(true) {
+								   m_degTri(30), m_degTet(18), m_bWithInnerNeumannBoundary(true) {
 					m_subsetNames["Epidermis layer"] = EPIDERMIS;
 					m_subsetNames["Subcutan layer"] = SUBCUTAN;
 					m_subsetNames["Injection layer"] = INJECTION;
@@ -76,6 +76,7 @@ namespace ug {
 			size_t m_numVerticesInjection;
 
 			number m_degTri;
+			number m_degTet;
 
 			bool m_bWithInnerNeumannBoundary;
 
