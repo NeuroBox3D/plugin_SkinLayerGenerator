@@ -2,7 +2,7 @@
  * \file plugins/skin_layer_generator/skin_layer_generator.h
  * \brief
  *
- * TODO: make this an utilty class
+ * TODO: refactor to utility class
  *
  *  Created on: January 30, 2017
  *      Author: Stephan Grein
@@ -30,55 +30,127 @@ namespace ug {
 			 */
 			SkinLayerGenerator() : m_center(ug::vector3(0, 0, 0)),
 								   m_centerInjection(ug::vector3(0, 0, 0)),
-								   m_injectionBase(1), m_injectionHeight(0.25),
-								   m_numStepsExtrudeSubcutan(1), m_numStepsExtrudeEpidermis(1),
-								   m_numStepsExtrudeInjection(1), m_epidermisThickness(0.5),
 								   m_radius(1), m_radiusInjection(0.5),
 								   m_numVertices(10), m_numVerticesInjection(10),
-								   m_degTri(30), m_degTet(18), m_bWithInnerNeumannBoundary(true) {
-					m_subsetNames["Epidermis layer"] = EPIDERMIS;
-					m_subsetNames["Subcutan layer"] = SUBCUTAN;
-					m_subsetNames["Injection layer"] = INJECTION;
-					m_subsetNames["Injection boundary"] = INJECTION_BOUNDARY;
-					m_subsetNames["Surface"] = SURFACE_ALL;
+								   m_degTri(30), m_degTet(18) {
 			}
 
            	/*!
-			 * \brief generate the skin layer with given parameters
+			 * \brief generate the skin layers,
 			 * \fn generate
 			 */
 			void generate();
 
-		private:
-			/// available subset names
-			std::map<std::string, int> m_subsetNames;
-			enum SUBSET_INDICES {
-				SUBCUTAN,
-				INJECTION,
-				EPIDERMIS,
-				SURFACE_ALL,
-				INJECTION_BOUNDARY
-			};
+			/*!
+			 * \brief add a skin layer with given parameters
+			 * \param[in] name
+			 * \param[in] thickness
+			 * \param[in] resolution
+			 */
+			void add_layer(const std::string& name, number thickness, number resolution) {
+				m_layers.push_back(Layer(thickness, name, resolution));
+			}
 
+			/*!
+			 * \brief add a skin layer with injection with given parameters
+			 * \param[in] name
+			 * \param[in] thickness
+			 * \param[in] resolution
+			 * \param[in] name2
+			 * \param[in] thickness2
+			 * \param[in] resolution2
+			 * \param[in] position relative position in layer
+			 */
+			void add_layer_with_injection(const std::string& name, number thickness, number resolution,
+		  							     const std::string& name2, number thickness2, number resolution2, number position) {
+				Layer l(thickness, name, resolution);
+				l.add_injection(name2, thickness2, resolution2, position);
+				m_layers.push_back(l);
+			}
+
+		private:
 			/// grid generation parameters
 			ug::vector3 m_center;
 			ug::vector3 m_centerInjection;
-			number m_injectionBase;
-			number m_injectionHeight;
-			number m_numStepsExtrudeSubcutan;
-			number m_numStepsExtrudeEpidermis;
-			number m_numStepsExtrudeInjection;
-			number m_epidermisThickness;
 
 			number m_radius;
 			number m_radiusInjection;
+
 			size_t m_numVertices;
 			size_t m_numVerticesInjection;
 
 			number m_degTri;
 			number m_degTet;
 
-			bool m_bWithInnerNeumannBoundary;
+			/*!
+			 * \brief Injection
+			 */
+			struct Injection {
+				std::string name;
+				number thickness;
+				number resolution;
+				number position;
+				bool with_inner;
+				/*!
+				 *
+				 */
+				Injection(const std::string& name, number thickness, number resolution, number position, number with_inner) : name(name), thickness(thickness), resolution(resolution), position(position), with_inner(with_inner) {
+				}
+
+				/*!
+				 *
+				 */
+				bool with_inner_neumann_boundary() {
+					return with_inner;
+				}
+			};
+
+			/*!
+			 * \brief Layer
+			 */
+			struct Layer {
+				std::string name;
+				number thickness;
+				number resolution;
+				SmartPtr<Injection> injection;
+
+				/*!
+				 *
+				 */
+				Layer(number thickness, const std::string& name, number resolution) : name(name), thickness(thickness), resolution(resolution) {}
+
+				/*!
+				 *
+				 */
+				Layer(number thickness, const std::string& name) : name(name), thickness(thickness), resolution(0.5) {}
+
+				/*!
+				 *
+				 */
+				void add_injection(const std::string& name, number thickness, number resolution, number position) {
+					UG_COND_THROW(thickness > this->thickness, "Thickness of injection layer may not be greater than layer itself");
+					UG_COND_THROW( (this->thickness * position + thickness) > this->thickness, "Dimensions of injection too big");
+					injection = make_sp(new Injection(name, thickness, resolution, position, false));
+				}
+
+				/*!
+				 *
+				 */
+				bool has_injection() const {
+					return injection.get() != NULL;
+				}
+
+				/*!
+				 *
+				 */
+				SmartPtr<Injection> get_injection() const {
+					return injection;
+				}
+
+			};
+
+			/// skin layers
+			std::vector<Layer> m_layers;
 
 			/// grid generation constants
 			static const number REMOVE_DOUBLES_THRESHOLD;

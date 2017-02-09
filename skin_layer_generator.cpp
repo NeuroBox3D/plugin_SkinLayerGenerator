@@ -2,12 +2,6 @@
  * \file plugins/skin_layer_generator/skin_layer_generator.cpp
  * \brief
  *
- * TODO: subcutan thickness probably should also be specifiable, i.e. extrude to
- * 	     injection, then place injection, then extrude the remaining
- * 	     difference in height (i.e. subcutanthickness-belowInjectionThickness-
- * 	     injectionThickness has to be extruded after the injection layer has
- * 	     been extruded.
- *
  *  Created on: January 30, 2017
  *      Author: Stephan Grein
  */
@@ -66,83 +60,123 @@ void SkinLayerGenerator::generate() {
 
 	/// extrude layers
 	SelectAll(mesh);
-	ExtrudeAlongNormal(mesh, m_injectionBase, m_numStepsExtrudeSubcutan, true, true);
-    FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
-	ExtrudeAlongNormal(mesh, m_injectionHeight, m_numStepsExtrudeInjection, true, true);
-    FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
-	ExtrudeAlongNormal(mesh, m_epidermisThickness, m_numStepsExtrudeEpidermis, true, true);
-	mesh->selector().clear();
-
-	/// select elements and assign to appropriate subsets
-	ug::vector3 base(m_centerInjection.x(), m_centerInjection.y(), m_centerInjection.z() + m_injectionBase);
-	ug::vector3 top(m_centerInjection.x(), m_centerInjection.y(), m_centerInjection.z() + m_injectionBase + m_injectionHeight);
-	ug::vector3 very_top(m_centerInjection.x(), m_centerInjection.y(), m_centerInjection.z() + m_injectionBase + m_injectionHeight + m_epidermisThickness);
-
-	SelectElementsInCylinder<ug::Face>(mesh, m_center, top, m_radius);
-	SelectElementsInCylinder<ug::Volume>(mesh, m_center, top, m_radius);
-	SelectElementsInCylinder<ug::Vertex>(mesh, m_center, top, m_radius);
-	SelectElementsInCylinder<ug::Edge>(mesh, m_center, top, m_radius);
-	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), SUBCUTAN);
-	mesh->selector().clear();
-
-	SelectElementsInCylinder<ug::Face>(mesh, top, very_top, m_radius);
-	SelectElementsInCylinder<ug::Volume>(mesh, top, very_top, m_radius);
-	SelectElementsInCylinder<ug::Vertex>(mesh, top, very_top, m_radius);
-	SelectElementsInCylinder<ug::Edge>(mesh, top, very_top, m_radius);
-	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), EPIDERMIS);
-	mesh->selector().clear();
-
-	SelectElementsInCylinder<ug::Face>(mesh, base, top, m_radiusInjection);
-	SelectElementsInCylinder<ug::Volume>(mesh, base, top, m_radiusInjection);
-	SelectElementsInCylinder<ug::Vertex>(mesh, base, top, m_radiusInjection);
-	SelectElementsInCylinder<ug::Edge>(mesh, base, top, m_radiusInjection);
-	if (m_bWithInnerNeumannBoundary) {
-		AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), INJECTION_BOUNDARY);
-	} else {
-		AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), INJECTION);
-	}
-	mesh->selector().clear();
-
-	if (m_bWithInnerNeumannBoundary) {
-		ug::vector3 base2 = base;
-		ug::vector3 top2 = top;
-		base2[2] = base2.z() + SELECTION_THRESHOLD;
-		top2[2] = top2.z() - SELECTION_THRESHOLD;
-
-		SelectElementsInCylinder<ug::Volume>(mesh, base, top, m_radiusInjection);
-		SelectElementsInCylinder<ug::Vertex>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
-		SelectElementsInCylinder<ug::Edge>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
-		SelectElementsInCylinder<ug::Face>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
-		AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), INJECTION);
-		mesh->selector().clear();
+	for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
+		if (it->has_injection()) {
+			SmartPtr<Injection> inj = it->get_injection();
+			number diff = it->thickness - inj->thickness - it->thickness*inj->position;
+			ExtrudeAlongNormal(mesh, it->thickness*inj->position, (it->thickness*inj->position) / it->resolution, true, true);
+			FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
+			ExtrudeAlongNormal(mesh, inj->thickness, inj->thickness / inj->resolution, true, true);
+			FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
+			ExtrudeAlongNormal(mesh, diff, diff / it->resolution, true, true);
+			FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
+		} else {
+			ExtrudeAlongNormal(mesh, it->thickness, it->thickness / it->resolution, true, true);
+		}
+		FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
 	}
 
+	mesh->selector().clear();
+	number base_coord = 0;
+	size_t si = 1;
+	ug::vector3 bottom;
+	ug::vector3 top_coord;
+	for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
+		if (it->has_injection()) {
+			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
+			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + it->thickness * it->injection->position);
+			SelectElementsInCylinder<ug::Face>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Volume>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Vertex>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Edge>(mesh, bottom, top_coord, m_radius);
+			base_coord = base_coord + it->thickness * it->injection->position;
+			AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
+			mesh->selector().clear();
+
+			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
+			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + it->injection->thickness);
+
+			ug::vector3 bottom2 = ug::vector3(m_centerInjection.x(), m_centerInjection.y(), m_centerInjection.z() + base_coord);
+			ug::vector3 top_coord2 = ug::vector3(m_centerInjection.x(), m_centerInjection.y(), m_centerInjection.z() + base_coord + it->injection->thickness);
+
+			SelectElementsInCylinder<ug::Face>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Volume>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Vertex>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Edge>(mesh, bottom, top_coord, m_radius);
+			base_coord = base_coord + it->injection->thickness;
+			AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
+			mesh->selector().clear();
+
+			SelectElementsInCylinder<ug::Face>(mesh, bottom2, top_coord2, m_radiusInjection);
+			SelectElementsInCylinder<ug::Volume>(mesh, bottom2, top_coord2, m_radiusInjection);
+			SelectElementsInCylinder<ug::Vertex>(mesh, bottom2, top_coord2, m_radiusInjection);
+			SelectElementsInCylinder<ug::Edge>(mesh, bottom2, top_coord2, m_radiusInjection);
+			AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si+1);
+			mesh->selector().clear();
+
+			/// TODO: handle injection subset boundary, i.e. separate boundary from volume
+			if (it->get_injection()->with_inner_neumann_boundary()) {
+
+			}
+
+			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
+			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + (it->thickness - it->injection->thickness - it->thickness * it->injection->position));
+			SelectElementsInCylinder<ug::Face>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Volume>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Vertex>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Edge>(mesh, bottom, top_coord, m_radius);
+			base_coord = base_coord + (it->thickness - it->injection->thickness - it->thickness * it->injection->position);
+			AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
+			mesh->selector().clear();
+
+			si++; si++;
+
+		} else {
+			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
+			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + it->thickness);
+			SelectElementsInCylinder<ug::Face>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Volume>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Vertex>(mesh, bottom, top_coord, m_radius);
+			SelectElementsInCylinder<ug::Edge>(mesh, bottom, top_coord, m_radius);
+			base_coord = base_coord + it->thickness;
+			AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
+			mesh->selector().clear();
+			si++;
+		}
+	}
+
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step0.ugx");
 	SelectBoundaryFaces(mesh);
 	SelectBoundaryVertices(mesh);
 	SelectBoundaryEdges(mesh);
-	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), SURFACE_ALL);
+	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
 	mesh->selector().clear();
-
-	/// rename subsets, erase empty subsets and assign colors
-	EraseEmptySubsets(mesh->subset_handler());
-	for (std::map<std::string, int>::const_iterator it = m_subsetNames.begin();
-			it != m_subsetNames.end(); ++it) {
-		mesh->subset_handler().subset_info(it->second).name = (it->first).c_str();
-	}
 	EraseEmptySubsets(mesh->subset_handler());
 	AssignSubsetColors(mesh->subset_handler());
-	/// save temporary delaunay grid to file
-	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_delaunay.ugx");
+
+	/// assign subset names
+	si = 0;
+	for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
+		mesh->subset_handler().subset_info(si).name = it->name;
+		if (it->has_injection()) {
+			si++;
+			mesh->subset_handler().subset_info(si).name = it->injection->name;
+		}
+		si++;
+	}
+	mesh->subset_handler().subset_info(si).name = "Surface";
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step1.ugx");
 
 	/// tetrahedralize
 	Tetrahedralize(mesh->grid(), mesh->subset_handler(), m_degTet, true, true, aPosition, 1);
 	EraseEmptySubsets(mesh->subset_handler());
 	AssignSubsetColors(mesh->subset_handler());
 
-	/// TODO reassign elements (note: there is a better way to assign it)
+	/// TODO separate volume subset after tetrahedralizing
+	/// ...
 
-	/// save final grid to file
-	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_volume.ugx");
+	/// save volume grid to file
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step2.ugx");
 
 	/// delete mesh
 	delete mesh;
