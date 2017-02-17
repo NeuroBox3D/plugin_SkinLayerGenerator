@@ -39,10 +39,10 @@ void SkinLayerGenerator::generate() {
 
 	/// mesh operations
 	UG_COND_THROW(m_radiusInjection == 0, "Radius of injection layer has to be > 0.")
-	CreateCircle(mesh, m_centerInjection, m_radiusInjection, m_numVerticesInjection, -1, false);
+	CreateCircle(mesh, m_centerInjection, m_radiusInjection, m_numVerticesInjection, 0, false);
 
 	UG_COND_THROW(m_radius == 0, "Radius of skin layer has to be > 0.")
-	CreateCircle(mesh, m_center, m_radius, m_numVertices, -1, false);
+	CreateCircle(mesh, m_center, m_radius, m_numVertices, 1, false);
 
 	/// position attachment for vertices
 	AInt aInt;
@@ -51,30 +51,79 @@ void SkinLayerGenerator::generate() {
 	mesh->grid().attach_to_all(aNormal);
 
 	/// select all, then fill with triangles
-	SelectAll(mesh);
-	TriangleFill_SweepLine(mesh->grid(), mesh->selector().edges_begin(), mesh->selector().edges_end(), aPosition, aInt, &mesh->subset_handler());
+	///SelectAll(mesh);
+	///TriangleFill_SweepLine(mesh->grid(), mesh->selector().edges_begin(), mesh->selector().edges_end(), aPosition, aInt, &mesh->subset_handler());
 
 	/// retriangulate (quality grid)
-	SelectAll(mesh);
-	Retriangulate(mesh, m_degTri);
+	///SelectAll(mesh);
+	///Retriangulate(mesh, m_degTri);
 
-	/// extrude layers
-	SelectAll(mesh);
+	number totalHeight = 0;
+	mesh->selector().clear();
+	/// extrude layers (TODO can be refactored into one for loop)
+	SelectSubset(mesh, 0, true, true, true, true);
 	for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
 		if (it->has_injection()) {
 			SmartPtr<Injection> inj = it->get_injection();
 			number diff = it->thickness - inj->thickness - it->thickness*inj->position;
-			ExtrudeAlongNormal(mesh, it->thickness*inj->position, (it->thickness*inj->position) / it->resolution, true, true);
+			ExtrudeAndMove(mesh, ug::vector3(0, 0, it->thickness*inj->position), (it->thickness*inj->position) / it->resolution, true, false);
+			//ExtrudeAlongNormal(mesh, it->thickness*inj->position, (it->thickness*inj->position) / it->resolution, true, false);
 			FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
-			ExtrudeAlongNormal(mesh, inj->thickness, inj->thickness / inj->resolution, true, true);
+
+			ExtrudeAndMove(mesh, ug::vector3(0, 0, inj->thickness), (inj->thickness) / inj->resolution, true, false);
+			//ExtrudeAlongNormal(mesh, inj->thickness, inj->thickness / inj->resolution, true, false);
 			FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
-			ExtrudeAlongNormal(mesh, diff, diff / it->resolution, true, true);
+
+			ExtrudeAndMove(mesh, ug::vector3(0, 0, diff), diff / it->resolution, true, false);
+			//ExtrudeAlongNormal(mesh, diff, diff / it->resolution, true, false);
 			FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
-		} else {
-			ExtrudeAlongNormal(mesh, it->thickness, it->thickness / it->resolution, true, true);
+			totalHeight += it->thickness;
+		}
+		else {
+			//ExtrudeAlongNormal(mesh, it->thickness, it->thickness / it->resolution, true, false);
+			ExtrudeAndMove(mesh, ug::vector3(0, 0, it->thickness), it->thickness / it->resolution, true, false);
+			std::stringstream ss;
+			ss << "skin_layer_generator_step_0_substep=" << it->name << ".ugx";
+			SaveGridToFile(mesh->grid(), mesh->subset_handler(), ss.str().c_str());
+			totalHeight += it->thickness;
 		}
 		FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
 	}
+	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), 0);
+
+	mesh->selector().clear();
+		/// extrude layers
+		SelectSubset(mesh, 1, true, true, true, true);
+		for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
+			if (it->has_injection()) {
+				SmartPtr<Injection> inj = it->get_injection();
+				number diff = it->thickness - inj->thickness - it->thickness*inj->position;
+				ExtrudeAndMove(mesh, ug::vector3(0, 0, it->thickness*inj->position), (it->thickness*inj->position) / it->resolution, true, false);
+				///ExtrudeAlongNormal(mesh, it->thickness*inj->position, (it->thickness*inj->position) / it->resolution, true, false);
+				FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
+
+				ExtrudeAndMove(mesh, ug::vector3(0, 0, inj->thickness), (inj->thickness) / inj->resolution, true, false);
+				//ExtrudeAlongNormal(mesh, inj->thickness, inj->thickness / inj->resolution, true, false);
+				FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
+
+				ExtrudeAndMove(mesh, ug::vector3(0, 0, diff), diff / it->resolution, true, false);
+				//ExtrudeAlongNormal(mesh, diff, diff / it->resolution, true, false);
+				FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
+			}
+			else {
+				//ExtrudeAlongNormal(mesh, it->thickness, it->thickness / it->resolution, true, false);
+				ExtrudeAndMove(mesh, ug::vector3(0, 0, it->thickness), it->thickness / it->resolution, true, false);
+				std::stringstream ss;
+				ss << "skin_layer_generator_step_0_substep=" << it->name << ".ugx";
+				SaveGridToFile(mesh->grid(), mesh->subset_handler(), ss.str().c_str());
+			}
+			FixFaceOrientation(mesh->grid(), mesh->selector().begin<Face>(), mesh->selector().end<Face>());
+		}
+		AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), 1);
+
+
+	AssignSubsetColors(mesh->subset_handler());
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step0.ugx");
 
 	mesh->selector().clear();
 	number base_coord = 0;
@@ -114,9 +163,19 @@ void SkinLayerGenerator::generate() {
 			AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si+1);
 			mesh->selector().clear();
 
-			/// TODO: handle injection subset boundary, i.e. separate boundary from volume
+			/// TODO: below needs to be fixed (select correct inner neumann boundary)
 			if (it->get_injection()->with_inner_neumann_boundary()) {
+					ug::vector3 base2 = bottom2;
+					ug::vector3 top2 = top_coord2;
+					base2[2] = base2.z() + SELECTION_THRESHOLD;
+					top2[2] = top2.z() - SELECTION_THRESHOLD;
 
+					SelectElementsInCylinder<ug::Volume>(mesh, base2, top2, m_radiusInjection);
+					SelectElementsInCylinder<ug::Vertex>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
+					SelectElementsInCylinder<ug::Edge>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
+					SelectElementsInCylinder<ug::Face>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
+					AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si+2);
+					mesh->selector().clear();
 			}
 
 			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
@@ -129,7 +188,7 @@ void SkinLayerGenerator::generate() {
 			AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
 			mesh->selector().clear();
 
-			si++; si++;
+			si++; si++; si++;
 
 		} else {
 			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
@@ -145,16 +204,18 @@ void SkinLayerGenerator::generate() {
 		}
 	}
 
-	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step0.ugx");
-	SelectBoundaryFaces(mesh);
-	SelectBoundaryVertices(mesh);
-	SelectBoundaryEdges(mesh);
+	EraseEmptySubsets(mesh->subset_handler());
+	AssignSubsetColors(mesh->subset_handler());
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step1.ugx");
+	SelectBoundaryFaces(mesh); /// Note this has no effect if surface not closed...
+	SelectBoundaryVertices(mesh); /// dito
+	SelectBoundaryEdges(mesh); /// dito
 	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
 	mesh->selector().clear();
 	EraseEmptySubsets(mesh->subset_handler());
 	AssignSubsetColors(mesh->subset_handler());
 
-	/// assign subset names
+	/// assign subset names (for all subsets except surface subsets)
 	si = 0;
 	for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
 		mesh->subset_handler().subset_info(si).name = it->name;
@@ -165,18 +226,43 @@ void SkinLayerGenerator::generate() {
 		si++;
 	}
 	mesh->subset_handler().subset_info(si).name = "Surface";
-	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step1.ugx");
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step2.ugx");
+
+	/// triangulate (TODO: better way to select these parts)
+	///// BOTTOM
+	mesh->selector().clear();
+	SelectElementsInCylinder<ug::Edge>(mesh, ug::vector3(0,0,-SELECTION_THRESHOLD), ug::vector3(0, 0, SELECTION_THRESHOLD), m_radius);
+	CloseSelection(mesh);
+	TriangleFill_SweepLine(mesh->grid(), mesh->selector().edges_begin(), mesh->selector().edges_end(), aPosition, aInt, &mesh->subset_handler());
+	SelectSubset(mesh, -1, true, true, true, true);
+	Retriangulate(mesh, m_degTri);
+	SelectSubset(mesh, -1, true, true, true, true);
+	AssignSubset(mesh, si);
+	mesh->selector().clear();
+	mesh->subset_handler().subset_info(si).name = "Bottom Surface";
+
+	////// TOP
+	SelectElementsInCylinder<ug::Edge>(mesh, ug::vector3(0,0,totalHeight-SELECTION_THRESHOLD), ug::vector3(0, 0, totalHeight +SELECTION_THRESHOLD), m_radius);
+	CloseSelection(mesh);
+	TriangleFill_SweepLine(mesh->grid(), mesh->selector().edges_begin(), mesh->selector().edges_end(), aPosition, aInt, &mesh->subset_handler());
+	SelectSubset(mesh, -1, true, true, true, true);
+	Retriangulate(mesh, m_degTri);
+	SelectSubset(mesh, -1, true, true, true, true);
+	si++;
+	AssignSubset(mesh, si);
+	mesh->subset_handler().subset_info(si).name = "Top Surface";
+	EraseEmptySubsets(mesh->subset_handler());
+	AssignSubsetColors(mesh);
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step3.ugx");
 
 	/// tetrahedralize
-	Tetrahedralize(mesh->grid(), mesh->subset_handler(), m_degTet, true, true, aPosition, 1);
-	EraseEmptySubsets(mesh->subset_handler());
-	AssignSubsetColors(mesh->subset_handler());
-
-	/// TODO separate volume subset after tetrahedralizing
-	/// ...
+	SelectAll(mesh);
+	Tetrahedralize(mesh->grid(), mesh->subset_handler(), m_degTet, false, false, aPosition, 1);
+	///EraseEmptySubsets(mesh->subset_handler());
+	///AssignSubsetColors(mesh->subset_handler());
 
 	/// save volume grid to file
-	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step2.ugx");
+	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step4.ugx");
 
 	/// delete mesh
 	delete mesh;

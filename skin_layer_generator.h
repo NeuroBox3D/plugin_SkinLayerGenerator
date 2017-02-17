@@ -59,12 +59,13 @@ namespace ug {
 			 * \param[in] name2
 			 * \param[in] thickness2
 			 * \param[in] resolution2
+			 * \param[in] with_inner
 			 * \param[in] position relative position in layer
 			 */
 			void add_layer_with_injection(const std::string& name, number thickness, number resolution,
-		  							     const std::string& name2, number thickness2, number resolution2, number position) {
+		  							     const std::string& name2, number thickness2, number resolution2, number position, bool with_inner) {
 				Layer l(thickness, name, resolution);
-				l.add_injection(name2, thickness2, resolution2, position);
+				l.add_injection(name2, thickness2, resolution2, position, with_inner);
 				m_layers.push_back(l);
 			}
 
@@ -92,13 +93,13 @@ namespace ug {
 				number position;
 				bool with_inner;
 				/*!
-				 *
+				 * \brief
 				 */
-				Injection(const std::string& name, number thickness, number resolution, number position, number with_inner) : name(name), thickness(thickness), resolution(resolution), position(position), with_inner(with_inner) {
+				Injection(const std::string& name, number thickness, number resolution, number position, bool with_inner) : name(name), thickness(thickness), resolution(resolution), position(position), with_inner(with_inner) {
 				}
 
 				/*!
-				 *
+				 * \brief
 				 */
 				bool with_inner_neumann_boundary() {
 					return with_inner;
@@ -115,22 +116,22 @@ namespace ug {
 				SmartPtr<Injection> injection;
 
 				/*!
-				 *
+				 * \brief
 				 */
 				Layer(number thickness, const std::string& name, number resolution) : name(name), thickness(thickness), resolution(resolution) {}
 
 				/*!
-				 *
+				 * \brief
 				 */
 				Layer(number thickness, const std::string& name) : name(name), thickness(thickness), resolution(0.5) {}
 
 				/*!
 				 *
 				 */
-				void add_injection(const std::string& name, number thickness, number resolution, number position) {
+				void add_injection(const std::string& name, number thickness, number resolution, number position, bool with_inner) {
 					UG_COND_THROW(thickness > this->thickness, "Thickness of injection layer may not be greater than layer itself");
 					UG_COND_THROW( (this->thickness * position + thickness) > this->thickness, "Dimensions of injection too big");
-					injection = make_sp(new Injection(name, thickness, resolution, position, false));
+					injection = make_sp(new Injection(name, thickness, resolution, position, with_inner));
 				}
 
 				/*!
