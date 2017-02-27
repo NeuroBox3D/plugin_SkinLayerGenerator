@@ -65,6 +65,20 @@ namespace ug {
 				m_layers.push_back(l);
 			}
 
+			/**
+			 * \brief
+			 */
+			size_t number_of_injections() const {
+				std::vector<Layer>::const_iterator it = m_layers.begin();
+				size_t num = 0;
+				for (; it != m_layers.end(); ++it) {
+					if (it->has_injection()) {
+						num++;
+					}
+				}
+				return num;
+			}
+
 		private:
 			/// grid generation parameters
 			ug::vector3 m_center;
@@ -131,14 +145,14 @@ namespace ug {
 				}
 
 				/*!
-				 *
+				 * \brief
 				 */
 				bool has_injection() const {
 					return injection.get() != NULL;
 				}
 
 				/*!
-				 *
+				 * \brief
 				 */
 				SmartPtr<Injection> get_injection() const {
 					return injection;
@@ -150,9 +164,7 @@ namespace ug {
 			std::vector<Layer> m_layers;
 
 			/// grid generation constants
-			static const number REMOVE_DOUBLES_THRESHOLD;
 			static const number SELECTION_THRESHOLD;
-			static const bool FILL;
 		};
 	}
 }

@@ -3,8 +3,8 @@
  * \brief
  *
  * TODO: get rid of SELECTION_THRESHOLD and cleanup code
- * TODO: get rid of inner cylinder maybe
- * TODO: re-introduce top and bottom surface
+ * TODO: get rid of inner cylinder and allow multiple injections
+ * TODO: re-introduce top and bottom surfaces
  * TODO: add unit tests
  *
  *  Created on: January 30, 2017
@@ -43,6 +43,8 @@ void SkinLayerGenerator::generate() {
 
 	UG_COND_THROW(m_radius == 0, "Radius of skin layer has to be > 0.")
 	CreateCircle(mesh, m_center, m_radius, m_numVertices, 1, false);
+
+	UG_COND_THROW(number_of_injections() > 1, "Currently only _one_ injection supported.");
 
 	/// integer, position (for vertices) and normal attachment (for all)
 	AInt aInt;
@@ -195,7 +197,7 @@ void SkinLayerGenerator::generate() {
 	/// BOTTOM
 	UG_DLOG(SLGGenerateMesh, 0, "Step IV: TRIANGULATE TOP AND BOTTOM SURFACES");
 	mesh->selector().clear();
-	SelectElementsInCylinder<ug::Edge>(mesh, ug::vector3(0,0,-SELECTION_THRESHOLD), ug::vector3(0, 0, SELECTION_THRESHOLD), m_radius);
+	SelectElementsInCylinder<ug::Edge>(mesh, ug::vector3(0, 0, -SELECTION_THRESHOLD), ug::vector3(0, 0, SELECTION_THRESHOLD), m_radius);
 	CloseSelection(mesh);
 	TriangleFill_SweepLine(mesh->grid(), mesh->selector().edges_begin(), mesh->selector().edges_end(), aPosition, aInt, &mesh->subset_handler());
 	SelectSubset(mesh, -1, true, true, true, true);
@@ -206,7 +208,7 @@ void SkinLayerGenerator::generate() {
 	mesh->subset_handler().subset_info(si).name = "Bottom Surface";
 
 	/// TOP
-	SelectElementsInCylinder<ug::Edge>(mesh, ug::vector3(0,0,totalHeight-SELECTION_THRESHOLD), ug::vector3(0, 0, totalHeight +SELECTION_THRESHOLD), m_radius);
+	SelectElementsInCylinder<ug::Edge>(mesh, ug::vector3(0, 0, totalHeight-SELECTION_THRESHOLD), ug::vector3(0, 0, totalHeight +SELECTION_THRESHOLD), m_radius);
 	CloseSelection(mesh);
 	TriangleFill_SweepLine(mesh->grid(), mesh->selector().edges_begin(), mesh->selector().edges_end(), aPosition, aInt, &mesh->subset_handler());
 	SelectSubset(mesh, -1, true, true, true, true);
@@ -373,6 +375,4 @@ void SkinLayerGenerator::generate() {
 /////////////////////////////////////////////////////////
 /// constants
 /////////////////////////////////////////////////////////
-const number SkinLayerGenerator::REMOVE_DOUBLES_THRESHOLD = 1e-8;
 const number SkinLayerGenerator::SELECTION_THRESHOLD = 0.1;
-const bool SkinLayerGenerator::FILL = false;
