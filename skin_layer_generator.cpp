@@ -2,11 +2,14 @@
  * \file plugins/skin_layer_generator/skin_layer_generator.cpp
  * \brief
  *
+ * TODO: get rid of SELECTION_THRESHOLD and cleanup code
+ * TODO: get rid of inner cylinder maybe
+ * TODO: re-introduce top and bottom surface
+ * TODO: add unit tests
+ *
  *  Created on: January 30, 2017
  *      Author: Stephan Grein
  */
-
-/// includes
 #include "skin_layer_generator.h"
 #include "lib_grid/lib_grid.h"
 #include "lib_grid/algorithms/remove_duplicates_util.h"
@@ -21,10 +24,8 @@
 #include "../ProMesh/tools/coordinate_transform_tools.h"
 #include "../ProMesh/tools/topology_tools.h"
  
-/// usings
 using namespace ug::skin_layer_generator;
 
-/// enable warnings and set debug ids
 #define UG_ENABLE_WARNINGS
 ug::DebugID SLGGenerateMesh("SLG_DID.GenerateMesh");
 
@@ -32,27 +33,27 @@ ug::DebugID SLGGenerateMesh("SLG_DID.GenerateMesh");
 /// GENERATE
 /////////////////////////////////////////////////////////
 void SkinLayerGenerator::generate() {
+	/// init promesh
 	using namespace promesh;
-	UG_DLOG(SLGGenerateMesh, 0, "Generating mesh.")
-	/// empty mesh
 	Mesh* mesh = new Mesh();
 
-	/// mesh operations - check for consistency first
+	/// mesh operations: check for mimimal consistency first
 	UG_COND_THROW(m_radiusInjection == 0, "Radius of injection layer has to be > 0.")
 	CreateCircle(mesh, m_centerInjection, m_radiusInjection, m_numVerticesInjection, 0, false);
 
 	UG_COND_THROW(m_radius == 0, "Radius of skin layer has to be > 0.")
 	CreateCircle(mesh, m_center, m_radius, m_numVertices, 1, false);
 
-	/// TODO: consistency check if depot fits in layer!
-
-	/// position attachment for vertices
+	/// integer, position (for vertices) and normal attachment (for all)
 	AInt aInt;
 	mesh->grid().attach_to_vertices(aInt);
 	mesh->grid().attach_to_vertices(aPosition);
 	mesh->grid().attach_to_all(aNormal);
 
-	/// extrude layers
+    /////////////////////////////////////////////////////////
+	/// Step I: GENERATE DELAUNAY MESH
+    /////////////////////////////////////////////////////////
+	UG_DLOG(SLGGenerateMesh, 0, "Step I: GENERATE DELAUNAY MESH");
 	number totalHeight = 0;
 	mesh->selector().clear();
 	SelectSubset(mesh, 0, true, true, true, true);
@@ -86,14 +87,17 @@ void SkinLayerGenerator::generate() {
 	AssignSubsetColors(mesh->subset_handler());
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step0.ugx");
 
-	/// assign delaunay mesh
+    /////////////////////////////////////////////////////////
+	/// Step II: ASSIGN DELAUNAY MESH TO SUBSETS
+    /////////////////////////////////////////////////////////
+	UG_DLOG(SLGGenerateMesh, 0, "Step II: ASSIGN DELAUNAY MESH TO SUBSETS");
 	mesh->selector().clear();
 	number base_coord = 0;
 	size_t si = 1;
 	ug::vector3 bottom;
 	ug::vector3 top_coord;
 	for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
-		/// TODO: check if works if depot coincidences with a layer boundary!
+		/// TODO: check if this works if depot coincidences with a layer boundary!
 		if (it->has_injection()) {
 			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
 			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + it->thickness * it->injection->position);
@@ -126,13 +130,11 @@ void SkinLayerGenerator::generate() {
 			AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si+1);
 			mesh->selector().clear();
 
-			/// TODO: below needs to be fixed (select correct inner neumann boundary)
 			if (it->get_injection()->with_inner_neumann_boundary()) {
 					ug::vector3 base2 = bottom2;
 					ug::vector3 top2 = top_coord2;
 					base2[2] = base2.z() + SELECTION_THRESHOLD;
 					top2[2] = top2.z() - SELECTION_THRESHOLD;
-
 					SelectElementsInCylinder<ug::Volume>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
 					SelectElementsInCylinder<ug::Vertex>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
 					SelectElementsInCylinder<ug::Edge>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
@@ -150,9 +152,7 @@ void SkinLayerGenerator::generate() {
 			base_coord = base_coord + (it->thickness - it->injection->thickness - it->thickness * it->injection->position);
 			AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
 			mesh->selector().clear();
-
 			si++; si++; si++;
-
 		} else {
 			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
 			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + it->thickness);
@@ -170,15 +170,12 @@ void SkinLayerGenerator::generate() {
 	EraseEmptySubsets(mesh->subset_handler());
 	AssignSubsetColors(mesh->subset_handler());
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step1.ugx");
-	SelectBoundaryFaces(mesh); /// Note this has no effect if surface not closed... (VERIFY first TODO)
-	SelectBoundaryVertices(mesh); /// dito
-	SelectBoundaryEdges(mesh); /// dito
-	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
 	mesh->selector().clear();
-	EraseEmptySubsets(mesh->subset_handler());
-	AssignSubsetColors(mesh->subset_handler());
 
-	/// assign subset names (for all subsets except surface subsets)
+    /////////////////////////////////////////////////////////
+	/// Step III: ASSIGN PRELIMINARY SUBSET NAMES
+    /////////////////////////////////////////////////////////
+	UG_DLOG(SLGGenerateMesh, 0, "Step III: ASSIGN PRELIMINARY SUBSET NAMES");
 	si = 0;
 	for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
 		mesh->subset_handler().subset_info(si).name = it->name;
@@ -191,8 +188,12 @@ void SkinLayerGenerator::generate() {
 	mesh->subset_handler().subset_info(si).name = "Surface";
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step2.ugx");
 
-	/// triangulate (TODO: better way to select these parts)
-	///// BOTTOM
+
+    /////////////////////////////////////////////////////////
+	/// Step IV: TRIANGULATE TOP AND BOTTOM SURFACES
+    /////////////////////////////////////////////////////////
+	/// BOTTOM
+	UG_DLOG(SLGGenerateMesh, 0, "Step IV: TRIANGULATE TOP AND BOTTOM SURFACES");
 	mesh->selector().clear();
 	SelectElementsInCylinder<ug::Edge>(mesh, ug::vector3(0,0,-SELECTION_THRESHOLD), ug::vector3(0, 0, SELECTION_THRESHOLD), m_radius);
 	CloseSelection(mesh);
@@ -204,7 +205,7 @@ void SkinLayerGenerator::generate() {
 	mesh->selector().clear();
 	mesh->subset_handler().subset_info(si).name = "Bottom Surface";
 
-	////// TOP
+	/// TOP
 	SelectElementsInCylinder<ug::Edge>(mesh, ug::vector3(0,0,totalHeight-SELECTION_THRESHOLD), ug::vector3(0, 0, totalHeight +SELECTION_THRESHOLD), m_radius);
 	CloseSelection(mesh);
 	TriangleFill_SweepLine(mesh->grid(), mesh->selector().edges_begin(), mesh->selector().edges_end(), aPosition, aInt, &mesh->subset_handler());
@@ -218,76 +219,66 @@ void SkinLayerGenerator::generate() {
 	AssignSubsetColors(mesh);
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step3.ugx");
 
-	/// tetrahedralize
+    /////////////////////////////////////////////////////////
+	/// Step V: TETRAHEDRALIZE THE DELAUNAY MESH
+    /////////////////////////////////////////////////////////
+	UG_DLOG(SLGGenerateMesh, 0, "Step V: TETRAHEDRALIZE THE DELAUNAY MESH");
 	SelectAll(mesh);
 	mesh->subset_handler().set_default_subset_index(-1);
 	Tetrahedralize(mesh->grid(), mesh->subset_handler(), m_degTet, false, false, aPosition, 1);
 	EraseEmptySubsets(mesh->subset_handler());
 	AssignSubsetColors(mesh->subset_handler());
-
-	/// save volume grid to file
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step4.ugx");
 
-	/// assign generated volumes
+    /////////////////////////////////////////////////////////
+	/// Step VI: ASSIGN GENERATED VOLUMINA
+    /////////////////////////////////////////////////////////
+	UG_DLOG(SLGGenerateMesh, 0, "Step VI: ASSIGN GENERATED VOLUMINA");
 	mesh->selector().clear();
 	base_coord = 0;
-
 	for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
 		if (it->has_injection()) {
-			/// TODO this is not quite good way to select it
 			si = mesh->subset_handler().get_subset_index(it->name.c_str());
 			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
 			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + it->thickness * it->injection->position);
-			SelectElementsInCylinder<ug::Volume>(mesh, bottom, top_coord, m_radius);
-			SelectElementsInCylinder<ug::Face>(mesh, bottom, top_coord, m_radius);
-			SelectElementsInCylinder<ug::Edge>(mesh, bottom, top_coord, m_radius);
-			SelectElementsInCylinder<ug::Vertex>(mesh, bottom, top_coord, m_radius);
 			base_coord = base_coord + it->thickness * it->injection->position;
-			/// AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
+			double below_depot_center = (top_coord.z()+bottom.z())/2;
 			mesh->selector().clear();
-
 			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
 			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + it->injection->thickness);
-
 			ug::vector3 bottom2 = ug::vector3(m_centerInjection.x(), m_centerInjection.y(), m_centerInjection.z() + base_coord);
 			ug::vector3 top_coord2 = ug::vector3(m_centerInjection.x(), m_centerInjection.y(), m_centerInjection.z() + base_coord + it->injection->thickness);
-
-			SelectElementsInCylinder<ug::Volume>(mesh, bottom, top_coord, m_radius);
-			SelectElementsInCylinder<ug::Face>(mesh, bottom, top_coord, m_radius);
-			SelectElementsInCylinder<ug::Edge>(mesh, bottom, top_coord, m_radius);
-			SelectElementsInCylinder<ug::Vertex>(mesh, bottom, top_coord, m_radius);
 			base_coord = base_coord + it->injection->thickness;
-			/// AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
 			mesh->selector().clear();
 
-			////////////// TODO replace by correct coordinates not 10.85, -0.6 and 8.9 //////////
 			Grid::VertexAttachmentAccessor<APosition> aaPos(mesh->grid(), aPosition);
 			Selector sel(mesh->grid());
+			double depot_center = (bottom2.z() + top_coord2.z())/2;
 
 			/// the depot
-			SelectRegion<Volume>(sel, ug::vector3(0, 0, 10.85), aaPos, IsNotInSubset(mesh->subset_handler(), -1));
+			SelectRegion<Volume>(sel, ug::vector3(0, 0, depot_center), aaPos, IsNotInSubset(mesh->subset_handler(), -1));
 			for (VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter) {
 				Volume* v = *vIter;
-				mesh->subset_handler().assign_subset(v, 102);
+				mesh->subset_handler().assign_subset(v, si+m_layers.size()+2);
 			}
 			sel.clear();
 
 			/// around depot
-			SelectRegion<Volume>(sel, ug::vector3(-0.6, 0, 10.85), aaPos, IsNotInSubset(mesh->subset_handler(), -1));
+			SelectRegion<Volume>(sel, ug::vector3((m_radius + m_radiusInjection)/2, 0, depot_center), aaPos, IsNotInSubset(mesh->subset_handler(), -1));
 			for (VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter) {
 				Volume* v = *vIter;
 				mesh->subset_handler().assign_subset(v, si);
 			}
 			sel.clear();
 
-			SelectRegion<Volume>(sel, ug::vector3(-0.6, 0, 8.9), aaPos, IsNotInSubset(mesh->subset_handler(), -1));
+			SelectRegion<Volume>(sel, ug::vector3((m_radius+m_radiusInjection)/2, 0, below_depot_center), aaPos, IsNotInSubset(mesh->subset_handler(), -1));
 			for (VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter) {
 				Volume* v = *vIter;
 				mesh->subset_handler().assign_subset(v, si);
 			}
 			sel.clear();
 
-			SelectRegion<Volume>(sel, ug::vector3(0, 0, 8.9), aaPos, IsNotInSubset(mesh->subset_handler(), -1));
+			SelectRegion<Volume>(sel, ug::vector3(0, 0, below_depot_center), aaPos, IsNotInSubset(mesh->subset_handler(), -1));
 			for (VolumeIterator vIter = sel.begin<Volume>(); vIter != sel.end<Volume>(); ++vIter) {
 				Volume* v = *vIter;
 				mesh->subset_handler().assign_subset(v, si);
@@ -327,13 +318,12 @@ void SkinLayerGenerator::generate() {
 	mesh->subset_handler().subset_info(si).name = "Surface";
 	EraseEmptySubsets(mesh->subset_handler());
 	AssignSubsetColors(mesh->subset_handler());
-
-	/// cleanup mesh
-	EraseEmptySubsets(mesh->subset_handler());
-	AssignSubsetColors(mesh->subset_handler());
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step5.ugx");
 
-	/// reassign unassociated elements
+    /////////////////////////////////////////////////////////
+	/// Step VII: REASSIGN UNASSIGNED ELEMENTS TO SUBSETS
+    /////////////////////////////////////////////////////////
+	UG_DLOG(SLGGenerateMesh, 0, "Step VII: REASSIGN UNASSIGNED ELEMENTS TO SUBSETS");
 	Grid& grid = mesh->grid();
 	SubsetHandler& sh = mesh->subset_handler();
 	sh.assign_subset(grid.vertices_begin(), grid.vertices_end(), -1);
@@ -363,7 +353,15 @@ void SkinLayerGenerator::generate() {
 	SelectBoundaryEdges(mesh);
 	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si);
 
-	/// final grid to be saved
+    /////////////////////////////////////////////////////////
+	/// Step VIII: FIX SUBSET NAMES FOR DEPOT AND INNER OF
+    /////////////////////////////////////////////////////////
+	UG_DLOG(SLGGenerateMesh, 0, "Step VIII: FIX SUBSET NAMES FOR DEPOT AND INNER OF");
+	/// flip subset names
+	/// n layers + 1 surface layer + 1 inner subset => n+2
+	si = mesh->subset_handler().get_subset_index("Depot");
+	mesh->subset_handler().subset_info(m_layers.size()+2).name = "Depot Inner";
+	mesh->subset_handler().subset_info(si).name = "Depot Boundary";
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step7.ugx");
 
 	/// delete mesh

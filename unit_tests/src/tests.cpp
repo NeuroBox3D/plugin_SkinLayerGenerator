@@ -7,12 +7,10 @@
 /// boost testmodule name
 #define BOOST_TEST_MODULE __CPP__UNIT_TESTS__UG__cleft_generator__
 
-/// includes
 #include <boost/test/included/unit_test.hpp>
 #include <boost/test/parameterized_test.hpp>
 #include "../../skin_layer_generator.h"
 
-/// usings
 using namespace boost::unit_test;
 using namespace ug::skin_layer_generator;
 
@@ -21,9 +19,8 @@ using namespace ug::skin_layer_generator;
 /////////////////////////////////////////////////////////
 BOOST_AUTO_TEST_SUITE(SKIN_LAYER_GENERATOR)
 
-/// DUMMY unit test
+/// DUMMY unit test to silence boost warning
 BOOST_AUTO_TEST_CASE(DUMMY_TEST) {
-	/// TODO add unit tests
 }
 
 BOOST_AUTO_TEST_SUITE_END();

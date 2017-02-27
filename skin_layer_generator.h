@@ -2,16 +2,12 @@
  * \file plugins/skin_layer_generator/skin_layer_generator.h
  * \brief
  *
- * TODO: refactor to utility class
- *
  *  Created on: January 30, 2017
  *      Author: Stephan Grein
  */
-
 #ifndef __H__UG__SKIN_LAYER_GENERATOR__SKIN_LAYER_GENERATOR__
 #define __H__UG__SKIN_LAYER_GENERATOR__SKIN_LAYER_GENERATOR__
 
-/// includes
 #include <vector>
 #include <string>
 #include <algorithm>
@@ -126,7 +122,7 @@ namespace ug {
 				Layer(number thickness, const std::string& name) : name(name), thickness(thickness), resolution(0.5) {}
 
 				/*!
-				 *
+				 * \brief adds an injection / depot into a layer
 				 */
 				void add_injection(const std::string& name, number thickness, number resolution, number position, bool with_inner) {
 					UG_COND_THROW(thickness > this->thickness, "Thickness of injection layer may not be greater than layer itself");

@@ -4,7 +4,6 @@
 #
 # author: Stephan Grein
 ################################################################################
-
 # minimum CMAKE version
 cmake_minimum_required(VERSION 2.6)
 
