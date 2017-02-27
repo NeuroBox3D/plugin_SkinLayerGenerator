@@ -2,10 +2,9 @@
  * \file plugins/skin_layer_generator/skin_layer_generator.cpp
  * \brief
  *
- * TODO: get rid of SELECTION_THRESHOLD and cleanup code
- * TODO: get rid of inner cylinder and allow multiple injections
- * TODO: re-introduce top and bottom surfaces
- * TODO: add unit tests
+ * TODO: i) get rid of SELECTION_THRESHOLD and cleanup code
+ * TODO: ii) re-introduce top and bottom surfaces
+ * TODO: iii) get rid of inner cylinder and allow multiple injections
  *
  *  Created on: January 30, 2017
  *      Author: Stephan Grein
@@ -99,7 +98,7 @@ void SkinLayerGenerator::generate() {
 	ug::vector3 bottom;
 	ug::vector3 top_coord;
 	for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
-		/// TODO: check if this works if depot coincidences with a layer boundary!
+		/// TODO: iv) check if this works if depot coincidences with a layer boundary!
 		if (it->has_injection()) {
 			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
 			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + it->thickness * it->injection->position);
