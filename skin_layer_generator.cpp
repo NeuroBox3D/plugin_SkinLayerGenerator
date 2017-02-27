@@ -44,6 +44,8 @@ void SkinLayerGenerator::generate() {
 	UG_COND_THROW(m_radius == 0, "Radius of skin layer has to be > 0.")
 	CreateCircle(mesh, m_center, m_radius, m_numVertices, 1, false);
 
+	/// TODO: consistency check if depot fits in layer!
+
 	/// position attachment for vertices
 	AInt aInt;
 	mesh->grid().attach_to_vertices(aInt);
@@ -91,6 +93,7 @@ void SkinLayerGenerator::generate() {
 	ug::vector3 bottom;
 	ug::vector3 top_coord;
 	for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
+		/// TODO: check if works if depot coincidences with a layer boundary!
 		if (it->has_injection()) {
 			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
 			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + it->thickness * it->injection->position);
