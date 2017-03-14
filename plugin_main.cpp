@@ -40,7 +40,8 @@ namespace ug {
 						.add_constructor<void (*)()>("")
 						.add_method("generate", (void (TSLG::*)())(&TSLG::generate), "", "", "generate the mesh", "")
 						.add_method("add_layer", (void (TSLG::*)(number, number, const std::string&))(&TSLG::add_layer), "", "", "add skin layer", "")
-						.add_method("add_layer_with_injection", (void (TSLG::*)(number, number, const std::string&, const std::string&, number, number, number, bool))(&TSLG::add_layer_with_injection), "", "", "add skin layer with injection", "");
+						.add_method("add_layer_with_injection", (void (TSLG::*)(number, number, const std::string&, const std::string&, number, number, number, bool))(&TSLG::add_layer_with_injection), "", "", "add skin layer with injection", "")
+						.add_method("add_layer_with_injection", (void (TSLG::*)(number, number, const std::string&, const std::string&, number, number, number))(&TSLG::add_layer_with_injection), "", "", "add skin layer with injection", "");
 			}
 		};
 	}

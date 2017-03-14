@@ -138,10 +138,15 @@ namespace ug {
 				/*!
 				 * \brief adds an injection / depot into a layer
 				 */
+				/// TODO: legacy (last argument with_inner can be removed
 				void add_injection(const std::string& name, number thickness, number resolution, number position, bool with_inner) {
 					UG_COND_THROW(thickness > this->thickness, "Thickness of injection layer may not be greater than layer itself");
 					UG_COND_THROW( (this->thickness * position + thickness) > this->thickness, "Dimensions of injection too big");
 					injection = make_sp(new Injection(name, thickness, resolution, position, with_inner));
+				}
+
+				void add_injection(const std::string& name, number thickness, number resolution, number position) {
+					add_injection(name, thickness, resolution, position, true);
 				}
 
 				/*!
