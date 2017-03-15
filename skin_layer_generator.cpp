@@ -4,7 +4,7 @@
  *
  * TODO: i) get rid of SELECTION_THRESHOLD and cleanup code
  * TODO: ii) re-introduce top and bottom surfaces
- * TODO: iii) get rid of inner cylinder and allow multiple injections
+ * TODO: iii) get rid of inner cylinder and allow multiple injection sides
  *
  *  Created on: January 30, 2017
  *      Author: Stephan Grein
@@ -380,9 +380,9 @@ void SkinLayerGenerator::generate() {
 	CloseSelection(mesh);
 	/// 4. rename subset
 	AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), mesh->subset_handler().num_subsets()+1);
-	mesh->subset_handler().subset_info(mesh->subset_handler().num_subsets()+1).name = "Depot Boundary";
 	/// 5. save final grid
 	EraseEmptySubsets(mesh->subset_handler());
+	mesh->subset_handler().subset_info(mesh->subset_handler().num_subsets()-1).name = "Depot Boundary";
 	AssignSubsetColors(mesh->subset_handler());
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step8.ugx");
 
