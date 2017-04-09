@@ -1,6 +1,6 @@
 /*!
  * \file plugins/skin_layer_generator/skin_layer_generator.h
- * \brief
+ * \brief Generates a vertical column of Skinlayers
  *
  *  Created on: January 30, 2017
  *      Author: Stephan Grein
@@ -22,7 +22,7 @@ namespace ug {
 		class SkinLayerGenerator {
 		public:
 			/*!
-			 * \brief
+			 * \brief default ctor
 			 */
 			SkinLayerGenerator() : m_center(ug::vector3(0, 0, 0)),
 								   m_centerInjection(ug::vector3(0, 0, 0)),
@@ -32,16 +32,18 @@ namespace ug {
 			}
 
            	/*!
-			 * \brief generate the skin layers,
+			 * \brief generate the skin layer column out of added layers
+			 *
 			 * \fn generate
 			 */
 			void generate();
 
 			/*!
 			 * \brief add a skin layer with given parameters
-			 * \param[in] name
-			 * \param[in] thickness
-			 * \param[in] resolution
+			 *
+			 * \param[in] name layer's name
+			 * \param[in] thickness layer's thickness
+			 * \param[in] resolution layer's resolution
 			 */
 			void add_layer(const std::string& name, number thickness, number resolution) {
 				m_layers.push_back(Layer(thickness, name, resolution));
@@ -49,24 +51,26 @@ namespace ug {
 
 			/*!
 			 * \brief add a skin layer with injection with given parameters
-			 * \param[in] name
-			 * \param[in] thickness
-			 * \param[in] resolution
-			 * \param[in] name2
-			 * \param[in] thickness2
-			 * \param[in] resolution2
-			 * \param[in] with_inner
-			 * \param[in] position relative position in layer
+			 *
+			 * \param[in] layerName layer's name
+			 * \param[in] thicknessLayer layer's thickness
+			 * \param[in] resLayer resolution of surrounding layer
+			 * \param[in] injectionName name of injection
+			 * \param[in] thicknessInjection thickness of injection
+			 * \param[in] resInjection resolution of injection
+			 * \param[in] relPosition relative position in layer
 			 */
-			void add_layer_with_injection(const std::string& name, number thickness, number resolution,
-		  							     const std::string& name2, number thickness2, number resolution2, number position, bool with_inner) {
-				Layer l(thickness, name, resolution);
-				l.add_injection(name2, thickness2, resolution2, position, with_inner);
-				m_layers.push_back(l);
+			void add_layer_with_injection(const std::string& layerName, number thicknessLayer,
+									     number resLayer, const std::string& injectionName,
+									     number thicknessInjection, number resInjection,
+									     number relPosition) {
+				Layer layer(thicknessLayer, layerName, resLayer);
+				layer.add_injection(injectionName, thicknessInjection, resInjection, relPosition);
+				m_layers.push_back(layer);
 			}
 
 			/**
-			 * \brief
+			 * \brief returns the number of injection sides
 			 */
 			size_t number_of_injections() const {
 				std::vector<Layer>::const_iterator it = m_layers.begin();
@@ -94,30 +98,32 @@ namespace ug {
 			number m_degTet;
 
 			/*!
-			 * \brief Injection
+			 * \brief encapsulates all injection parameters
 			 */
 			struct Injection {
 				std::string name;
 				number thickness;
 				number resolution;
 				number position;
-				bool with_inner;
-				/*!
-				 * \brief
-				 */
-				Injection(const std::string& name, number thickness, number resolution, number position, bool with_inner) : name(name), thickness(thickness), resolution(resolution), position(position), with_inner(with_inner) {
-				}
 
 				/*!
-				 * \brief
+				 * \brief constructs an injection in a given layer
+				 *
+				 * \param[in] name injection's name
+				 * \param[in] thickness injection's thickness
+				 * \param[in] resolution injection's resolution
+				 * \param[in] relPosition injection's relative position
 				 */
-				bool with_inner_neumann_boundary() {
-					return with_inner;
+				Injection(const std::string& name, number thickness,
+						  number resolution, number relPosition) :
+						name(name), thickness(thickness),
+						resolution(resolution),
+						position(relPosition) {
 				}
 			};
 
 			/*!
-			 * \brief Layer
+			 * \brief encapsulates all layer parameters
 			 */
 			struct Layer {
 				std::string name;
@@ -126,38 +132,51 @@ namespace ug {
 				SmartPtr<Injection> injection;
 
 				/*!
-				 * \brief
+				 * \brief construct a layer with given resolution
+				 *
+				 * \param[in] thickness
+				 * \param[in] name
+				 * \param[in] resolution
 				 */
-				Layer(number thickness, const std::string& name, number resolution) : name(name), thickness(thickness), resolution(resolution) {}
+				Layer(number thickness, const std::string& name, number resolution) :
+					name(name), thickness(thickness), resolution(resolution) {
+				}
 
 				/*!
-				 * \brief
+				 * \brief construct a layer
+				 *
+				 * \param[in] thickness
+				 * \param[in] name
 				 */
-				Layer(number thickness, const std::string& name) : name(name), thickness(thickness), resolution(0.5) {}
+				Layer(number thickness, const std::string& name) :
+					name(name),
+					thickness(thickness),
+					resolution(0.5) {
+				}
 
 				/*!
-				 * \brief adds an injection / depot into a layer
+				 * \brief adds an injection to a given layer
+				 *
+				 * \param[in] name injection's name
+				 * \param[in] thicness injection's thickness
+				 * \param[in] resolution injection's resolution
+				 * \param[in] relPosition injection's relative position in layer
 				 */
-				/// TODO: legacy (last argument with_inner can be removed
-				void add_injection(const std::string& name, number thickness, number resolution, number position, bool with_inner) {
+				void add_injection(const std::string& name, number thickness, number resolution, number relPosition) {
 					UG_COND_THROW(thickness > this->thickness, "Thickness of injection layer may not be greater than layer itself");
-					UG_COND_THROW( (this->thickness * position + thickness) > this->thickness, "Dimensions of injection too big");
-					injection = make_sp(new Injection(name, thickness, resolution, position, with_inner));
-				}
-
-				void add_injection(const std::string& name, number thickness, number resolution, number position) {
-					add_injection(name, thickness, resolution, position, true);
+					UG_COND_THROW( (this->thickness * relPosition + thickness) > this->thickness, "Dimensions of injection too big");
+					injection = make_sp(new Injection(name, thickness, resolution, relPosition));
 				}
 
 				/*!
-				 * \brief
+				 * \brief check if injection exists
 				 */
 				bool has_injection() const {
 					return injection.get() != NULL;
 				}
 
 				/*!
-				 * \brief
+				 * \brief return the injection member
 				 */
 				SmartPtr<Injection> get_injection() const {
 					return injection;

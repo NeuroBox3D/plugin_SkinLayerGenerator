@@ -98,7 +98,7 @@ void SkinLayerGenerator::generate() {
 	ug::vector3 bottom;
 	ug::vector3 top_coord;
 	for (std::vector<Layer>::const_iterator it = m_layers.begin(); it != m_layers.end(); ++it) {
-		/// TODO: iv) check if this works if depot coincidences with a layer boundary (should not occur however!)
+		/// TODO: iv) check if this works if depot coincidences with a layer boundary (should never occur however)
 		if (it->has_injection()) {
 			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord);
 			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + it->thickness * it->injection->position);
@@ -131,18 +131,16 @@ void SkinLayerGenerator::generate() {
 			AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si+1);
 			mesh->selector().clear();
 
-			if (it->get_injection()->with_inner_neumann_boundary()) {
-					ug::vector3 base2 = bottom2;
-					ug::vector3 top2 = top_coord2;
-					base2[2] = base2.z() + SELECTION_THRESHOLD;
-					top2[2] = top2.z() - SELECTION_THRESHOLD;
-					SelectElementsInCylinder<ug::Volume>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
-					SelectElementsInCylinder<ug::Vertex>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
-					SelectElementsInCylinder<ug::Edge>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
-					SelectElementsInCylinder<ug::Face>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
-					AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si+2);
-					mesh->selector().clear();
-			}
+			ug::vector3 base2 = bottom2;
+			ug::vector3 top2 = top_coord2;
+			base2[2] = base2.z() + SELECTION_THRESHOLD;
+			top2[2] = top2.z() - SELECTION_THRESHOLD;
+			SelectElementsInCylinder<ug::Volume>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
+			SelectElementsInCylinder<ug::Vertex>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
+			SelectElementsInCylinder<ug::Edge>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
+			SelectElementsInCylinder<ug::Face>(mesh, base2, top2, m_radiusInjection - SELECTION_THRESHOLD);
+			AssignSelectionToSubset(mesh->selector(), mesh->subset_handler(), si+2);
+			mesh->selector().clear();
 
 			bottom = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + SELECTION_THRESHOLD);
 			top_coord = ug::vector3(m_center.x(), m_center.y(), m_center.z() + base_coord + (it->thickness - it->injection->thickness - it->thickness * it->injection->position));
