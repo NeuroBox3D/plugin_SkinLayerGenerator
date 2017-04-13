@@ -40,7 +40,8 @@ namespace ug {
 						.add_constructor<void (*)()>("")
 						.add_method("generate", (void (TSLG::*)())(&TSLG::generate), "", "", "generate the mesh", "")
 						.add_method("add_layer", (void (TSLG::*)(number, number, const std::string&))(&TSLG::add_layer), "", "layer's name#layer's thickness#layer's resolution", "add skin layer", "")
-						.add_method("add_layer_with_injection", (void (TSLG::*)(number, number, const std::string&, const std::string&, number, number, number))(&TSLG::add_layer_with_injection), "", "layer's name#layer's thickness#layer's resolution#injection's name#injection's thickness#injection's resolution#injection's relative position in layer", "add skin layer with injection", "");
+						.add_method("add_layer_with_injection", (void (TSLG::*)(number, number, const std::string&, const std::string&, number, number, number))(&TSLG::add_layer_with_injection), "", "layer's name#layer's thickness#layer's resolution#injection's name#injection's thickness#injection's resolution#injection's relative position in layer", "add skin layer with injection", "")
+						.add_method("enable_output_straightening", (void (TSLG::*)(bool))(&TSLG::set_straighten_subset_names_for_lua), "", "true or false", "");
 			}
 		};
 	}

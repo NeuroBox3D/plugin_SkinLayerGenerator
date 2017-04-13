@@ -2,6 +2,8 @@
  * \file plugins/skin_layer_generator/skin_layer_generator.h
  * \brief Generates a vertical column of Skinlayers
  *
+ * TODO: split declaration from definitions (out of line style)
+ *
  *  Created on: January 30, 2017
  *      Author: Stephan Grein
  */
@@ -28,7 +30,8 @@ namespace ug {
 								   m_centerInjection(ug::vector3(0, 0, 0)),
 								   m_radius(1), m_radiusInjection(0.5),
 								   m_numVertices(10), m_numVerticesInjection(10),
-								   m_degTri(30), m_degTet(18) {
+								   m_degTri(30), m_degTet(18),
+								   m_bStraightenSubsetNamesForLua(false) {
 			}
 
            	/*!
@@ -69,7 +72,7 @@ namespace ug {
 				m_layers.push_back(layer);
 			}
 
-			/**
+			/*!
 			 * \brief returns the number of injection sides
 			 */
 			size_t number_of_injections() const {
@@ -82,6 +85,19 @@ namespace ug {
 				}
 				return num;
 			}
+
+			/// inline methods
+			/*!
+			 * \brief enables straightening of subset names for Lua
+			 * \param[in] straighten
+			 */
+			void set_straighten_subset_names_for_lua(bool straighten);
+
+			/*!
+			 * \brief check if straighening of subset names for Lua enabled
+			 */
+			bool is_straighten_subset_names_for_lua() const;
+
 
 		private:
 			/// grid generation parameters
@@ -189,6 +205,9 @@ namespace ug {
 
 			/// grid generation constants
 			static const number SELECTION_THRESHOLD;
+
+			/// output parameters
+			bool m_bStraightenSubsetNamesForLua;
 		};
 	}
 }

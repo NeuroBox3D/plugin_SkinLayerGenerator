@@ -22,6 +22,9 @@
 #include "../ProMesh/tools/refinement_tools.h"
 #include "../ProMesh/tools/coordinate_transform_tools.h"
 #include "../ProMesh/tools/topology_tools.h"
+#include <algorithm>
+#include <iostream>
+#include <string>
  
 using namespace ug::skin_layer_generator;
 
@@ -384,10 +387,36 @@ void SkinLayerGenerator::generate() {
 	AssignSubsetColors(mesh->subset_handler());
 	SaveGridToFile(mesh->grid(), mesh->subset_handler(), "skin_layer_generator_step8.ugx");
 
+    /////////////////////////////////////////////////////////
+	/// Step X: Straighten subset names for Lua
+    /////////////////////////////////////////////////////////
+	if (m_bStraightenSubsetNamesForLua) {
+		for (int si = 0; si < mesh->subset_handler().num_subsets(); si++) {
+			SubsetInfo& subsetInfo = mesh->subset_handler().subset_info(si);
+			std::string oldSubsetName = subsetInfo.name;
+			std::string newSubsetName = oldSubsetName;
+			std::remove_if(oldSubsetName.begin(), oldSubsetName.end(), ::isspace);
+			subsetInfo.name = newSubsetName;
+		}
+	}
+
 	/// delete mesh
 	delete mesh;
 }
 
+/////////////////////////////////////////////////////////
+/// SET_STRAIGHTEN_SUBSET_NAMES_FOR_LUA
+/////////////////////////////////////////////////////////
+void SkinLayerGenerator::set_straighten_subset_names_for_lua(bool straighten) {
+	m_bStraightenSubsetNamesForLua = straighten;
+}
+
+/////////////////////////////////////////////////////////
+/// IS_STRAIGHTEN_SUBSET_NAME_FOR_LUA
+/////////////////////////////////////////////////////////
+bool SkinLayerGenerator::is_straighten_subset_names_for_lua() const {
+	return m_bStraightenSubsetNamesForLua;
+}
 
 
 /////////////////////////////////////////////////////////
