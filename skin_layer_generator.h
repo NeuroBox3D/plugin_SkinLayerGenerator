@@ -2,8 +2,6 @@
  * \file plugins/skin_layer_generator/skin_layer_generator.h
  * \brief Generates a vertical column of Skinlayers
  *
- * TODO: split declaration from definitions (out of line style)
- *
  *  Created on: January 30, 2017
  *      Author: Stephan Grein
  */
@@ -48,9 +46,7 @@ namespace ug {
 			 * \param[in] thickness layer's thickness
 			 * \param[in] resolution layer's resolution
 			 */
-			void add_layer(const std::string& name, number thickness, number resolution) {
-				m_layers.push_back(Layer(thickness, name, resolution));
-			}
+			void add_layer(const std::string& name, number thickness, number resolution);
 
 			/*!
 			 * \brief add a skin layer with injection with given parameters
@@ -66,27 +62,13 @@ namespace ug {
 			void add_layer_with_injection(const std::string& layerName, number thicknessLayer,
 									     number resLayer, const std::string& injectionName,
 									     number thicknessInjection, number resInjection,
-									     number relPosition) {
-				Layer layer(thicknessLayer, layerName, resLayer);
-				layer.add_injection(injectionName, thicknessInjection, resInjection, relPosition);
-				m_layers.push_back(layer);
-			}
+									     number relPosition);
 
 			/*!
 			 * \brief returns the number of injection sides
 			 */
-			size_t number_of_injections() const {
-				std::vector<Layer>::const_iterator it = m_layers.begin();
-				size_t num = 0;
-				for (; it != m_layers.end(); ++it) {
-					if (it->has_injection()) {
-						num++;
-					}
-				}
-				return num;
-			}
+			size_t number_of_injections() const;
 
-			/// inline methods
 			/*!
 			 * \brief enables straightening of subset names for Lua
 			 * \param[in] straighten
@@ -178,9 +160,12 @@ namespace ug {
 				 * \param[in] resolution injection's resolution
 				 * \param[in] relPosition injection's relative position in layer
 				 */
-				void add_injection(const std::string& name, number thickness, number resolution, number relPosition) {
-					UG_COND_THROW(thickness > this->thickness, "Thickness of injection layer may not be greater than layer itself");
-					UG_COND_THROW( (this->thickness * relPosition + thickness) > this->thickness, "Dimensions of injection too big");
+				void add_injection(const std::string& name, number thickness,
+								   number resolution, number relPosition) {
+					UG_COND_THROW(thickness > this->thickness, "Thickness of"
+							" injection layer may not be greater than layer itself");
+					UG_COND_THROW( (this->thickness * relPosition + thickness) > this->thickness,
+							"Dimensions of injection too big");
 					injection = make_sp(new Injection(name, thickness, resolution, relPosition));
 				}
 

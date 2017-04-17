@@ -32,6 +32,41 @@ using namespace ug::skin_layer_generator;
 ug::DebugID SLGGenerateMesh("SLG_DID.GenerateMesh");
 
 /////////////////////////////////////////////////////////
+/// ADD_LAYER
+/////////////////////////////////////////////////////////
+void SkinLayerGenerator::add_layer(const std::string& name,
+								  number thickness,
+								  number resolution) {
+	m_layers.push_back(Layer(thickness, name, resolution));
+}
+
+/////////////////////////////////////////////////////////
+/// ADD_LAYER_WITH_INJECTION
+/////////////////////////////////////////////////////////
+void SkinLayerGenerator::add_layer_with_injection(const std::string& layerName,
+		 number thicknessLayer, number resLayer, const std::string& injectionName,
+	     number thicknessInjection, number resInjection, number relPosition) {
+	Layer layer(thicknessLayer, layerName, resLayer);
+	layer.add_injection(injectionName, thicknessInjection, resInjection, relPosition);
+	m_layers.push_back(layer);
+}
+
+/////////////////////////////////////////////////////////
+/// NUMBER_OF_INJECTIONS
+/////////////////////////////////////////////////////////
+size_t SkinLayerGenerator::number_of_injections() const {
+	std::vector<Layer>::const_iterator it = m_layers.begin();
+	size_t num = 0;
+	for (; it != m_layers.end(); ++it) {
+		if (it->has_injection()) {
+			num++;
+		}
+	}
+	return num;
+}
+
+
+/////////////////////////////////////////////////////////
 /// GENERATE
 /////////////////////////////////////////////////////////
 void SkinLayerGenerator::generate() {
